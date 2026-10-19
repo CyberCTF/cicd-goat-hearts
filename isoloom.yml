@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://www.isoloom.com/schema/v1.json
+# Hearts (CI/CD Goat, CICD-SEC-2 Inadequate Identity & Access Management): a single-machine Jenkins
+# lab. Wonderland's controller uses Jenkins' own user database, which has no protection against
+# password guessing. The agents administrator, `knave`, has a privileged account with a weak,
+# guessable password. An attacker brute-forces it against a short wordlist, logs in, and uses that
+# privileged access to read a credential Jenkins keeps for itself — a System-scope credential that
+# no pipeline can bind. The credential's secret is the flag. See https://www.isoloom.com.
+version: 1
+name: cicd-goat-hearts
+
+networks:
+  lab: { cidr: 10.39.0.0/24 }
+
+# The per-player flag, issued by CyberCTF and handed to the lab by the launcher as a FILE (never an
+# environment value, so it never shows in `docker inspect`, an image layer or a generated file). The
+# Jenkins entrypoint stages it into the directory JCasC reads file secrets from, so the System-scope
+# `prod-deploy` credential resolves at boot with this player's flag as its secret. Optional: an
+# offline start (local, CI) leaves it empty and the lab stages its inert development placeholder
+# instead, so the lab still comes up and is solvable offline.
+#   CTF_FLAG_HEARTS  objective `hearts`  (SECRET: the System-scope prod-deploy credential's secret)
+inputs:
+  CTF_FLAG_HEARTS:
+    description: the hearts flag, injected as the secret of the System-scope prod-deploy credential
+
+machines:
+  # Wonderland's Jenkins controller: configured entirely by Configuration-as-Code. Its security realm
+  # is Jenkins' own user database (no signup, no anti-bruteforce); `knave` is the agents admin, a
+  # privileged account with the weak password the attacker guesses. The flag is NOT in the image: the
+  # prod-deploy credential's secret resolves at boot from a root-only file the entrypoint stages out
+  # of the per-player input Isoloom mounts at run time. No `publish` number: `publish: true` asks the
+  # runner for a free host port it picks at `up` time (dynamic), so two labs never collide.
+  jenkins:
+    app:
+      build: build/jenkins
+    networks: { lab: 10 }
+    resources: { cpus: 2, memory_mb: 2048 }
+    ports:
+      web: { port: 8080, protocol: http, publish: true }
+    files:
+      - { path: /run/lab/secrets/hearts, input: CTF_FLAG_HEARTS }
+
+# From the player's side: a reachability check derived from the spec (the Jenkins login form answers),
+# and the intended path as a solver that runs inside the Jenkins controller — it brute-forces knave's
+# weak password against the bundled wordlist, logs in, and uses knave's privileged access (the Script
+# Console) to exfiltrate the System-scope prod-deploy credential, proving the flag was recovered
+# WITHOUT ever printing it. Jenkins is slow to boot and JCasC takes a moment to apply, so the solver
+# keeps retrying until its own deadline (below the exec `wait`), and the waits are generous.
+checks:
+  - name: the Jenkins controller answers
+    http: http://jenkins:8080/login
+    wait: 5m
+  - name: knave's weak password is brute-forced and the System-scope credential is exfiltrated
+    from: jenkins
+    exec: bash /usr/local/bin/hearts-solve
+    wait: 6m
+
+# Shown when the lab is up.
+message: |
+  Wonderland runs CI on a **Jenkins** controller. You have a low-privileged account.
+
+  - Jenkins: {{ machines.jenkins.ports.web.url }}  (sign in as `alice` / `alice`)
+
+  Jenkins is backed by its **own user database**, with no protection against password guessing.
+  Browse to **People** (top left) and read the users' descriptions — one account administers the
+  build **agents**, and an agents administrator can make Jenkins hand over the credentials it keeps
+  for itself.
+
+  That privileged account has a **weak, guessable password**. Brute-force it (a short list of common
+  passwords is enough — the classic `rockyou` list would find it), log in, and use its access to read
+  the `prod-deploy` credential. It is stored at **System** scope, so no pipeline can bind it — but a
+  privileged user can read it straight from the **Script Console**
+  (`Manage Jenkins » Script Console`):
+
+  ```
+  def c = com.cloudbees.plugins.credentials.SystemCredentialsProvider.getInstance()
+            .getCredentials().find { it.id == 'prod-deploy' }
+  println c.password.getPlainText()
+  ```
+
+  The recovered secret is the flag.

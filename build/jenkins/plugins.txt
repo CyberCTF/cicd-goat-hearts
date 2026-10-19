@@ -1,0 +1,7 @@
+# Jenkins plugins for the hearts lab. jenkins-plugin-cli resolves compatible versions for the pinned
+# controller. Just enough for: config-as-code, matrix-based authorization (so knave is a privileged
+# account and alice is not), and the credentials store that holds the System-scope flag credential.
+configuration-as-code
+matrix-auth
+credentials
+plain-credentials

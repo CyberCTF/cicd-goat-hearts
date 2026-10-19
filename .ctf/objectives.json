@@ -1,0 +1,19 @@
+{
+  "objectives": [
+    {
+      "key": "hearts",
+      "title": "Hearts",
+      "prompt": "\"Who stole the tarts?\" Wonderland runs CI on a Jenkins controller backed by its own user database — and that database has no defence against password guessing. You have a low-privileged account, alice. Browse to People and read the users' descriptions: the Knave is the agents administrator, a privileged account, and an agents administrator can make Jenkins hand over the credentials it keeps for itself. The Knave's password is weak and guessable. Brute-force it (a short list of common passwords will do), log in, and use that access to read the System-scope prod-deploy credential from the Script Console. Recover its secret and submit it as the flag.",
+      "check": { "evidence": "SECRET", "format": "%s" },
+      "dev": "hearts-dev-flag-not-a-real-secret-0000",
+      "capabilities": [
+        "cicd-identity-bruteforce"
+      ],
+      "hints": [
+        "Jenkins' own user database has no account lockout or rate limiting, so a password can be guessed online. Try candidates against the REST API with HTTP Basic auth, e.g. `curl -u knave:<password> <jenkins>/whoAmI/api/json` — a wrong password returns 401, the right one returns your identity. A common-password list such as rockyou will find knave's.",
+        "A System-scope credential cannot be bound by any pipeline — only Jenkins itself uses it. But a privileged user (knave is Overall/Administer) can read it directly from Manage Jenkins » Script Console: `SystemCredentialsProvider.getInstance().getCredentials().find { it.id == 'prod-deploy' }`.",
+        "In the Script Console, read the credential's password with `.password.getPlainText()`. That value is the flag — submit it exactly."
+      ]
+    }
+  ]
+}

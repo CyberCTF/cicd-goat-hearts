@@ -1,0 +1,61 @@
+# Jenkins Configuration-as-Code for Wonderland's controller.
+#
+# The Identity & Access Management failure (CICD-SEC-2) is here, in two parts:
+#   1. The security realm is Jenkins' OWN user database, with signup off and NO anti-bruteforce — so
+#      an account's password can be guessed by trying candidates against the login/REST endpoints.
+#   2. `knave`, the agents administrator, is a PRIVILEGED account (Overall/Administer) that carries a
+#      weak, guessable password (`rockme`). `alice`, the account the player starts with, is not.
+#
+# The flag is NOT in this file and NOT in the image: the prod-deploy credential's secret resolves at
+# boot from a file secret (`${hearts}` -> $SECRETS/hearts) the entrypoint stages from the per-player
+# input Isoloom mounts at run time. prod-deploy is SYSTEM-scope — no pipeline can bind it; only
+# Jenkins itself, or a privileged user via the Script Console, can read it.
+jenkins:
+  systemMessage: "Wonderland CI — build agents administered by the Knave."
+  numExecutors: 1
+  mode: NORMAL
+  securityRealm:
+    local:
+      allowsSignup: false
+      enableCaptcha: false
+      users:
+        - id: "admin"
+          name: "Admin"
+          password: "ciderland5#"
+        - id: "alice"
+          name: "Alice"
+          password: "alice"
+        - id: "knave"
+          name: "Knave"
+          description: "Agents admin — manages Jenkins build agents and their credentials."
+          password: "rockme"
+  authorizationStrategy:
+    globalMatrix:
+      entries:
+        - user:
+            name: "admin"
+            permissions:
+              - "Overall/Administer"
+        - user:
+            name: "knave"
+            permissions:
+              - "Overall/Administer"
+        - user:
+            name: "alice"
+            permissions:
+              - "Overall/Read"
+
+credentials:
+  system:
+    domainCredentials:
+      - credentials:
+          - usernamePassword:
+              id: "prod-deploy"
+              scope: SYSTEM
+              username: "deploy"
+              password: "${hearts}"
+              description: "Deploy credentials Jenkins uses to reach the production agent — keep secret"
+
+unclassified:
+  location:
+    url: "http://jenkins:8080/"
