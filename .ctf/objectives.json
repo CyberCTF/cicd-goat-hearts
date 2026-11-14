@@ -3,7 +3,7 @@
     {
       "key": "hearts",
       "title": "Hearts",
-      "prompt": "\"Who stole the tarts?\" Wonderland runs CI on a Jenkins controller backed by its own user database — and that database has no defence against password guessing. You have a low-privileged account, alice. Browse to People and read the users' descriptions: the Knave is the agents administrator, a privileged account, and an agents administrator can make Jenkins hand over the credentials it keeps for itself. The Knave's password is weak and guessable. Brute-force it (a short list of common passwords will do), log in, and use that access to read the System-scope prod-deploy credential from the Script Console. Recover its secret and submit it as the flag.",
+      "prompt": "Submit the secret of the System-scope prod-deploy credential, read after brute-forcing the knave account, exactly as recovered.",
       "check": { "evidence": "SECRET", "format": "%s" },
       "dev": "hearts-dev-flag-not-a-real-secret-0000",
       "capabilities": [

@@ -2,12 +2,12 @@
   "project_name": "cyberlabs-cicd-goat-hearts",
   "slug": "cicd-goat-hearts",
   "title": "Hearts: inadequate identity & access management",
-  "description": "A Jenkins controller is backed by its own user database, with no protection against password guessing. The agents administrator, knave, is a privileged account (Overall/Administer) with a weak, guessable password. An attacker brute-forces it against a common-password wordlist, logs in, and uses that privileged access to read a System-scope credential straight from the Script Console (no pipeline can bind a System-scope credential). The credential's secret is the flag (OWASP CICD-SEC-2, Inadequate Identity and Access Management). Reproduces the \"Hearts\" challenge from CI/CD Goat.",
+  "description": "A Jenkins controller uses its own user database with no protection against password guessing, and its privileged agents administrator, knave, has a weak password. Starting from a low-privileged account, brute-force knave's password and use its access to read the System-scope prod-deploy credential (OWASP CICD-SEC-2, Inadequate Identity and Access Management).",
   "category": "cicd",
   "difficulty": 2,
   "evidence_kind": "SECRET",
   "capabilities": [
     "cicd-identity-bruteforce"
   ],
-  "question": "Brute-force the weak password of the privileged knave account on the Jenkins controller and exfiltrate the System-scope prod-deploy credential."
+  "question": "Submit the secret of the System-scope prod-deploy credential, read after brute-forcing the knave account, exactly as recovered."
 }
